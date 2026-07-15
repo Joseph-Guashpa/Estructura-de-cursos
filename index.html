@@ -421,6 +421,44 @@
     const buildNewTypes = () => {
       return [
         {
+          name: "Preparación Exámenes",
+          icon: "fa-solid fa-file-pen",
+          level: 2,
+          children: [
+            { name: "Goethe Zertifikat Start A1", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }, { name: "Virtual", icon: "fa-solid fa-laptop", horarios: ["Horario no definido"] }], 4)] },
+            { name: "Goethe Zertifikat Start A2", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }, { name: "Virtual", icon: "fa-solid fa-laptop", horarios: ["Horario no definido"] }], 4)] },
+            { name: "Goethe Zertifikat B1", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }, { name: "Virtual", icon: "fa-solid fa-laptop", horarios: ["Horario no definido"] }], 4)] },
+            { name: "Goethe Zertifikat B2", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }, { name: "Virtual", icon: "fa-solid fa-laptop", horarios: ["Horario no definido"] }], 4)] }
+          ]
+        },
+        {
+          name: "Preparación DSD",
+          icon: "fa-solid fa-language",
+          level: 2,
+          children: [
+            { name: "DSD I (A2-B1)", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }], 4)] },
+            { name: "DSD II (B2-C1)", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }], 4)] }
+          ]
+        },
+        {
+          name: "Preparación IVA",
+          icon: "fa-solid fa-book-open",
+          level: 2,
+          children: [
+            { name: "IVA A1", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }], 4)] },
+            { name: "IVA A2", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }], 4)] }
+          ]
+        },
+        {
+          name: "Cursos Vacacionales",
+          icon: "fa-solid fa-umbrella-beach",
+          level: 2,
+          children: [
+            { name: "Vacacional Infanto-Juveniles (A1)", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }], 4)] },
+            { name: "Vacacionales Refuerzo (CAH)", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }], 4)] }
+          ]
+        },
+        {
           name: "Taller Práctico",
           icon: "fa-solid fa-person-chalkboard",
           level: 2,
@@ -460,7 +498,6 @@
           level: 1,
           children: [
             ...buildOldTypes("Samborondón"),
-            ...buildNewTypes()
           ]
         }
       ]
