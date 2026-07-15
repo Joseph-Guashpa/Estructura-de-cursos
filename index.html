@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cursos de Alemán</title>
+  <title>Cursos de Alemán – Árbol completo unificado</title>
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- React y Babel -->
@@ -40,7 +40,7 @@
 
     .container {
       width: 100%;
-      max-width: 1200px;
+      max-width: 1300px;
       background: rgba(255,255,255,0.75);
       backdrop-filter: blur(12px);
       border-radius: 1.5rem;
@@ -241,1120 +241,226 @@
   <script type="text/babel">
     const { useState } = React;
 
-    // Árbol jerárquico: Ciclo → Sede → Tipo → Nivel → Módulo → Modalidad → Horario → Docente
+    // Helpers para construir nodos repetitivos
+    const createModalityNode = (modalities, levelBase = 4) => {
+      const children = modalities.map(mod => ({
+        name: mod.name,
+        icon: mod.icon,
+        level: levelBase + 1,
+        children: [{
+          name: "Horario",
+          icon: "fa-solid fa-clock",
+          level: levelBase + 2,
+          children: (mod.horarios && mod.horarios.length > 0 ? mod.horarios.map(h => ({
+            name: h,
+            icon: "fa-regular fa-hourglass-half",
+            level: levelBase + 3,
+            children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: levelBase + 4, leaf: true }]
+          })) : [{
+            name: "Horario no definido",
+            icon: "fa-regular fa-hourglass-half",
+            level: levelBase + 3,
+            children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: levelBase + 4, leaf: true }]
+          }])
+        }]
+      }));
+
+      return {
+        name: "Modalidad",
+        icon: "fa-solid fa-building-columns",
+        level: levelBase,
+        children: children
+      };
+    };
+
+    // Construcción de la estructura de horarios para los tipos antiguos
+    const horariosIntensivoKennedy = [
+      { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half" },
+      { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half" },
+      { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half" }
+    ];
+    const horarioVirtualIntensivoKennedy = [{ name: "19h30-21h30", icon: "fa-regular fa-hourglass-half" }];
+    const horariosSuperIntensivoKennedy = [
+      { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half" },
+      { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half" }
+    ];
+    const horarioVirtualSuperIntensivoKennedy = [{ name: "18h30-21h30", icon: "fa-regular fa-hourglass-half" }];
+    const horariosSabatino = [
+      { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half" },
+      { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half" }
+    ];
+    const horariosJuvenil = [
+      { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half" },
+      { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half" },
+      { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half" }
+    ];
+
+    // Módulos según tipo y nivel
+    const modulosIntensivoSuper = {
+      A1: ["A1.1", "A1.2"],
+      A2: ["A2.1", "A2.2"],
+      B1: ["B1.1", "B1.2", "B1.3"],
+      B2: ["B2.1", "B2.2", "B2.3"]
+    };
+    const modulosSabatinoJuvenil = {
+      A1: ["A1-M1", "A1-M2", "A1-M3", "A1-M4"],
+      A2: ["A2-M1", "A2-M2", "A2-M3", "A2-M4"],
+      B1: ["B1-M1", "B1-M2", "B1-M3", "B1-M4"],
+      B2: ["B2-M1", "B2-M2", "B2-M3", "B2-M4"]
+    };
+
+    const niveles = ["A1", "A2", "B1", "B2"];
+
+    // Función para construir un nivel completo con módulos y modalidades
+    const buildNivel = (nivel, tipo, sede) => {
+      let modulosArray = [];
+      if (tipo === "Intensivo" || tipo === "SuperIntensivo") {
+        modulosArray = modulosIntensivoSuper[nivel];
+      } else if (tipo === "Sabatino" || tipo === "Juvenil") {
+        modulosArray = modulosSabatinoJuvenil[nivel];
+      }
+
+      const moduloNode = {
+        name: "Módulos",
+        icon: "fa-solid fa-cubes",
+        level: 4,
+        children: modulosArray.map(m => ({
+          name: m,
+          icon: "fa-regular fa-file-alt",
+          level: 5,
+          leaf: true
+        }))
+      };
+
+      let modalidadNode;
+
+      if (tipo === "Intensivo" && sede === "Kennedy") {
+        modalidadNode = createModalityNode([
+          { name: "Presencial", icon: "fa-solid fa-user-check", horarios: horariosIntensivoKennedy.map(h => h.name) },
+          { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", horarios: horariosIntensivoKennedy.map(h => h.name) },
+          { name: "Virtual", icon: "fa-solid fa-laptop", horarios: horarioVirtualIntensivoKennedy.map(h => h.name) }
+        ], 4);
+      } else if (tipo === "Intensivo" && sede === "Samborondón") {
+        modalidadNode = createModalityNode([
+          { name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["16h00-18h00", "18h30-20h30"] },
+          { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", horarios: ["16h00-18h00", "18h30-20h30"] }
+        ], 4);
+      } else if (tipo === "SuperIntensivo" && sede === "Kennedy") {
+        modalidadNode = createModalityNode([
+          { name: "Presencial", icon: "fa-solid fa-user-check", horarios: horariosSuperIntensivoKennedy.map(h => h.name) },
+          { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", horarios: horariosSuperIntensivoKennedy.map(h => h.name) },
+          { name: "Virtual", icon: "fa-solid fa-laptop", horarios: horarioVirtualSuperIntensivoKennedy.map(h => h.name) }
+        ], 4);
+      } else if (tipo === "Sabatino") {
+        modalidadNode = createModalityNode([
+          { name: "Presencial", icon: "fa-solid fa-user-check", horarios: horariosSabatino.map(h => h.name) },
+          { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", horarios: horariosSabatino.map(h => h.name) },
+          { name: "Virtual", icon: "fa-solid fa-laptop", horarios: horariosSabatino.map(h => h.name) }
+        ], 4);
+      } else if (tipo === "Juvenil") {
+        modalidadNode = createModalityNode([
+          { name: "Presencial", icon: "fa-solid fa-user-check", horarios: horariosJuvenil.map(h => h.name) },
+          { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", horarios: horariosJuvenil.map(h => h.name) },
+          { name: "Virtual", icon: "fa-solid fa-laptop", horarios: horariosJuvenil.map(h => h.name) }
+        ], 4);
+      }
+
+      return {
+        name: nivel,
+        icon: nivel.startsWith("A") ? "fa-solid fa-a" : "fa-solid fa-b",
+        level: 3,
+        children: [moduloNode, modalidadNode]
+      };
+    };
+
+    // Construcción de los tipos anteriores para una sede
+    const buildOldTypes = (sede) => {
+      const tipos = [];
+      // Intensivo
+      const intensivoNiveles = niveles.map(nivel => buildNivel(nivel, "Intensivo", sede));
+      tipos.push({
+        name: "Intensivo",
+        icon: "fa-solid fa-bolt",
+        level: 2,
+        children: intensivoNiveles
+      });
+
+      // SuperIntensivo solo Kennedy
+      if (sede === "Kennedy") {
+        const superNiveles = niveles.map(nivel => buildNivel(nivel, "SuperIntensivo", sede));
+        tipos.push({
+          name: "SuperIntensivo",
+          icon: "fa-solid fa-fire",
+          level: 2,
+          children: superNiveles
+        });
+      }
+
+      // Sabatino
+      const sabatinoNiveles = niveles.map(nivel => buildNivel(nivel, "Sabatino", sede));
+      tipos.push({
+        name: "Sabatino",
+        icon: "fa-solid fa-calendar-day",
+        level: 2,
+        children: sabatinoNiveles
+      });
+
+      // Juvenil
+      const juvenilNiveles = niveles.map(nivel => buildNivel(nivel, "Juvenil", sede));
+      tipos.push({
+        name: "Juvenil",
+        icon: "fa-solid fa-child",
+        level: 2,
+        children: juvenilNiveles
+      });
+
+      return tipos;
+    };
+
+    // Construcción de los nuevos tipos (comunes a ambas sedes)
+    const buildNewTypes = () => {
+      return [
+        {
+          name: "Taller Práctico",
+          icon: "fa-solid fa-person-chalkboard",
+          level: 2,
+          children: [
+            { name: "General", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }, { name: "Virtual", icon: "fa-solid fa-laptop", horarios: ["Horario no definido"] }], 4)] }
+          ]
+        },
+        {
+          name: "Clases Particulares",
+          icon: "fa-solid fa-user-graduate",
+          level: 2,
+          children: [
+            { name: "General", icon: "fa-solid fa-certificate", level: 3, children: [createModalityNode([{ name: "Presencial", icon: "fa-solid fa-user-check", horarios: ["Horario no definido"] }, { name: "Virtual", icon: "fa-solid fa-laptop", horarios: ["Horario no definido"] }], 4)] }
+          ]
+        }
+      ];
+    };
+
+    // Árbol completo
     const treeData = {
       name: "Ciclo",
       icon: "fa-solid fa-arrows-spin",
       level: 0,
       children: [
-        // Sede Kennedy
         {
           name: "Kennedy",
           icon: "fa-solid fa-location-dot",
           level: 1,
           children: [
-            // Tipo: Intensivo
-            {
-              name: "Intensivo",
-              icon: "fa-solid fa-bolt",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "19h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "19h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1.3", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "19h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2.3", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "10h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "15h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "17h30-19h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "19h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            // Tipo: SuperIntensivo
-            {
-              name: "SuperIntensivo",
-              icon: "fa-solid fa-fire",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "18h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "18h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1.3", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "18h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2.3", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h00-12h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "18h30-21h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            // Tipo: Sabatino
-            {
-              name: "Sabatino",
-              icon: "fa-solid fa-calendar-day",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            // Tipo: Juvenil
-            {
-              name: "Juvenil",
-              icon: "fa-solid fa-child",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
+            ...buildOldTypes("Kennedy"),
+            ...buildNewTypes()
           ]
         },
-        // Sede Samborondón (sin SuperIntensivo, Intensivo sin Virtual)
         {
           name: "Samborondón",
           icon: "fa-solid fa-location-dot",
           level: 1,
           children: [
-            // Tipo: Intensivo
-            {
-              name: "Intensivo",
-              icon: "fa-solid fa-bolt",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1.3", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2.1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2.2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2.3", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "16h00-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "18h30-20h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            // Tipo: Sabatino
-            {
-              name: "Sabatino",
-              icon: "fa-solid fa-calendar-day",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "09h30-13h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "14h00-17h30", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            // Tipo: Juvenil
-            {
-              name: "Juvenil",
-              icon: "fa-solid fa-child",
-              level: 2,
-              children: [
-                {
-                  name: "A1", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "A2", icon: "fa-solid fa-a", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "A2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "A2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B1", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B1-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B1-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  name: "B2", icon: "fa-solid fa-b", level: 3, children: [
-                    { name: "Módulos", icon: "fa-solid fa-cubes", level: 4, children: [
-                        { name: "B2-M1", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M2", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M3", icon: "fa-regular fa-file-alt", level: 5, leaf: true },
-                        { name: "B2-M4", icon: "fa-regular fa-file-alt", level: 5, leaf: true }
-                      ]
-                    },
-                    { name: "Modalidad", icon: "fa-solid fa-building-columns", level: 4, children: [
-                        { name: "Presencial", icon: "fa-solid fa-user-check", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Híbrido", icon: "fa-solid fa-arrows-left-right", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        },
-                        { name: "Virtual", icon: "fa-solid fa-laptop", level: 5, children: [
-                            { name: "Horario", icon: "fa-solid fa-clock", level: 6, children: [
-                                { name: "Semanal 16h30-18h00", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 10h00-13h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] },
-                                { name: "Sabatino 14h00-17h15", icon: "fa-regular fa-hourglass-half", level: 7, children: [{ name: "Docente", icon: "fa-solid fa-chalkboard-user", level: 8, leaf: true }] }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
+            ...buildOldTypes("Samborondón"),
+            ...buildNewTypes()
           ]
         }
       ]
@@ -1398,7 +504,7 @@
         <div className="container">
           <h1>
             <i className="fa-solid fa-sitemap"></i>
-            Árbol de Cursos de Alemán (Nueva jerarquía)
+            Árbol de Cursos de Alemán – Completo
           </h1>
           <p className="subtitle">
             Ciclo → Sede → Tipo → Nivel → Módulo → Modalidad → Horario → Docente
